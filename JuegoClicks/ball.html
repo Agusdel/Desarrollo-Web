@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Bola</title>
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+  			integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  			crossorigin="anonymous">  	
+	</script>
+	  <meta charset="UTF-8">
+	  <link rel="stylesheet" type="text/css" href="style.css">
+
+</head>
+<body>
+	<button id="scoreIncrement-button" style="font-size:25px; background-color: green"> Click! </button>
+	<button id="scoreReset-button" style="font-size:25px; background-color: red"> Reset! </button>
+
+	<div id="score-text" style="font-size:40px">Score: 0</div>
+
+	<div id="ball">
+		<div class="bouncer">
+			<div class="circle spinner"></div>
+		</div> 
+	</div>
+
+</body>
+</html>
+
+<script type="text/javascript">
+	document.getElementsByTagName("BODY")[0].style.backgroundColor = "yellow";
+	var score = 0;
+
+	function updateScoreText(){
+		document.getElementById("score-text").innerHTML = "Score: " + score;
+	}
+
+	function incrementScore(){
+		score ++;
+		updateScoreText();
+	}
+
+	function resetScore(){
+		score = 0;
+		updateScoreText();
+	}
+
+	function show(elementID){
+		document.getElementById(elementID).style.display = 'Block';
+	}
+
+	$ ("#scoreIncrement-button").on("click", function(event) {
+		incrementScore();
+	});
+
+	$ ("#ball").on("click", function(event) {
+		incrementScore();
+	});
+
+	$ ("#scoreReset-button").on("click", function(event) {
+		resetScore();
+	});
+</script>
