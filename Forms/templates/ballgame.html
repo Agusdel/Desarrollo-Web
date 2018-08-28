@@ -1,0 +1,92 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+	<title>Bola</title>
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+  			integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  			crossorigin="anonymous">  	
+	</script>
+	  <meta charset="UTF-8">
+	  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/ballgamestyle.css')}}">
+
+</head>
+<body>
+	<button id="submi-button" style="font-size:25px; background-color: green"> Submit Score! </button>
+	<button id="scoreReset-button" style="font-size:25px; background-color: red"> Reset! </button>
+
+	<div id="score-text" style="font-size:40px">Score: 0</div>
+
+	<div id="ball">
+		<div class="bouncer">
+			<div class="circle spinner"></div>
+		</div> 
+	</div>
+
+</body>
+</html> -->
+
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Bola{% endblock %}
+
+{% block head %}
+	{{ super() }}
+	<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+	<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+  			integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  			crossorigin="anonymous">  	
+	</script>
+	  <meta charset="UTF-8">
+	  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/ballgamestyle.css')}}">
+{% endblock %}
+
+{% block page_content %}
+	<button id="submi-button" style="font-size:25px; background-color: green"> Submit Score! </button>
+	<button id="scoreReset-button" style="font-size:25px; background-color: red"> Reset! </button>
+
+	<div id="score-text" style="font-size:40px">Score: 0</div>
+
+	<div id="ball">
+		<div class="bouncer">
+			<div class="circle spinner"></div>
+		</div> 
+	</div>
+	
+	<script type="text/javascript">
+		document.getElementsByTagName("BODY")[0].style.backgroundColor = "yellow";
+		var score = 0;
+
+		function updateScoreText(){
+			document.getElementById("score-text").innerHTML = "Score: " + score;
+		}
+
+		function incrementScore(){
+			score ++;
+			updateScoreText();
+		}
+
+		function resetScore(){
+			score = 0;
+			updateScoreText();
+		}
+
+		function show(elementID){
+			document.getElementById(elementID).style.display = 'Block';
+		}
+
+		$ ("#submi-button").on("click", function(event) {
+			redirect(url_for('index'));
+		});
+
+		$ ("#ball").on("click", function(event) {
+			incrementScore();
+		});
+
+		$ ("#scoreReset-button").on("click", function(event) {
+			resetScore();
+		});
+	</script>
+{% endblock %}
+
