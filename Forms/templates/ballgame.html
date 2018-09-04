@@ -26,7 +26,6 @@
 </html> -->
 
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
 
 {% block title %}Bola{% endblock %}
 
@@ -43,9 +42,10 @@
 {% endblock %}
 
 {% block page_content %}
-	<button id="submi-button" style="font-size:25px; background-color: green"> Submit Score! </button>
+	<button id="submit-button" style="font-size:25px; background-color: green"> Submit Score! </button>
 	<button id="scoreReset-button" style="font-size:25px; background-color: red"> Reset! </button>
 
+	<div id="highestscore-text" style="font-size:40px">Highest Score: {% if highscore %}{{ highscore }}{% else %}0{% endif %}</div>
 	<div id="score-text" style="font-size:40px">Score: 0</div>
 
 	<div id="ball">
@@ -76,8 +76,16 @@
 			document.getElementById(elementID).style.display = 'Block';
 		}
 
-		$ ("#submi-button").on("click", function(event) {
-			redirect(url_for('index'));
+		function get_submit_url(){
+			return "http://localhost:5000/submit?player={{ player }}&score=" + score;
+			//base_url = "http://localhost:5000";
+			//return "{0}/submit?player={{ player }}&score={1}".format(base_url,score)
+		}
+
+		$ ("#submit-button").on("click", function(event) {
+			//redirect(get_submit_url());
+			//request.post(url_for('submit'), );
+			{{ request.score = 100 }}
 		});
 
 		$ ("#ball").on("click", function(event) {

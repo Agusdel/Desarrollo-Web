@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, session, redirect, url_for
+from flask import Flask, render_template, session, redirect, url_for, request
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
@@ -32,6 +32,7 @@ class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, index=True)
+    highscore = db.Column(db.Integer)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
     def __repr__(self):
@@ -59,23 +60,38 @@ def index():
     form = NameForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.name.data).first()
+        session['name'] = form.name.data
         if user is None:
-            user = User(username=form.name.data)
+            user = User(username=form.name.data, highscore=0)
             db.session.add(user)
             db.session.commit()
             session['known'] = False
         else:
             session['known'] = True
+            session['highscore'] = user.highscore
             return redirect(url_for('ballgame'))
-        session['name'] = form.name.data
     return render_template('index.html', form=form, name=session.get('name'),
                            known=session.get('known', False))
+
+@app.route('/submit', methods=['POST'])
+def submit_score():
+    player = request.args.get('player', type = str)
+    score = request.args.get('score', default = 0, type = int)
+
+    user = User.query.filter_by(username=player).first()
+    if (score > user.highscore):
+        user.highscore = score
+        db.session.commit()
+
+    return redirect(url_for('index'))
 
 
 @app.route('/ballgame', methods=['GET', 'POST'])
 def ballgame():
-    return render_template('ballgame.html')
+    return render_template('ballgame.html', player=session.get('name'), highscore=session.get('highscore'), request=request)
                            
 if __name__ == '__main__':
+    db.drop_all()
+    db.create_all()
     app.run()
 
