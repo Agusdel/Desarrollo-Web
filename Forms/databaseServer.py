@@ -56,7 +56,7 @@ def internal_server_error(e):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    #print(User.query.all())
+
     form = NameForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.name.data).first()
@@ -73,25 +73,32 @@ def index():
     return render_template('index.html', form=form, name=session.get('name'),
                            known=session.get('known', False))
 
+def print_submited_values(player, score):
+    print("Player " + str(player) + " submitted score " + str(score) + ".")
+
 @app.route('/submit', methods=['POST'])
 def submit_score():
-    player = request.args.get('player', type = str)
-    score = request.args.get('score', default = 0, type = int)
+    player = request.form.get('player', type = str)
+    score = request.form.get('score', default = 0, type = int)
+
+    session['name'] = player
 
     user = User.query.filter_by(username=player).first()
     if (score > user.highscore):
         user.highscore = score
+        session['highscore'] = score
         db.session.commit()
+    else:
+        session['highscore'] = user.highscore
 
     return redirect(url_for('index'))
 
 
 @app.route('/ballgame', methods=['GET', 'POST'])
 def ballgame():
-    return render_template('ballgame.html', player=session.get('name'), highscore=session.get('highscore'), request=request)
+    return render_template('ballgame.html', player=session.get('name'), highscore=session.get('highscore'))
                            
 if __name__ == '__main__':
     db.drop_all()
     db.create_all()
     app.run()
-
