@@ -101,6 +101,6 @@ def ballgame():
     return render_template('ballgame.html', player=session.get('name'), highscore=session.get('highscore'))
                            
 if __name__ == '__main__':
-   	db.drop_all()
-    db.create_all()
-    app.run()
+	db.drop_all()
+	db.create_all()
+	app.run()

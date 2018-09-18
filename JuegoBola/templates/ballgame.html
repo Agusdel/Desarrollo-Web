@@ -30,20 +30,21 @@
 	    let WALK_START = 0;
 	    let WALK_MAX = 8;
 	    var getInputKey = {};
-	    let gravity = 6;
+	    let gravity = 0.1;
 	    let groundY = 512 - 25;
 
 	    var isGameOver = false;
 	    var gameTime = 0;
 	    var gameTimerInveterval;
+	    var deltaTime = 0;
 
 	    // background vars
 	    let backgroudWidth = 1024;
 	    let backgroundHeight = 512;
 
 	    // player vars
-	    let playerWalkSpeed = 10;
-	    let playerJumpPower = -45;
+	    let playerWalkSpeed = 0.5;
+	    let playerJumpPower = -35;
 	    let playerAnimation = IDLE;    	
 	    let playerW = 48, playerH = 60;
 
@@ -57,8 +58,10 @@
 
 	    // ball vars
 	    let ballW = 64, ballH = 64;
-	    let ballMinHorizontalVelocity = 6;
-	    let ballMaxHorizontalVelocity = 20;
+	    let ballMinHorizontalVelocity = 0.3;
+	    let ballMaxHorizontalVelocity = 0.7;
+	    let ballMinBounceForce = 10;
+	    let ballMaxBounceForce = 40;
 
 	    var ballX = 0;
 	    var ballY = 0;
@@ -101,18 +104,15 @@
 			setPlayerPosition(backgroudWidth / 2, groundY - playerH);
 
 			ballHorizontalVelocity = getRndInteger(ballMinHorizontalVelocity, ballMaxHorizontalVelocity) * ((getRndInteger(0,1) == 1) ? 1 : -1);
-			var ballStartX = getRndInteger(backgroudWidth * 0.15, backgroudWidth * 0.85);
-			setBallPosition(ballStartX, Math.floor(backgroundHeight/10));
+			setBallPosition(backgroudWidth * 0.15, Math.floor(backgroundHeight/10));
 
 			gameTimerInveterval = setInterval(updateGameTime, 1000);
 	    }
 
-	    function gameLoop()
+	    function gameLoop(deltaTime)
 	    {
 	    	if (!isGameOver)
 	    	{
-				clearAll();
-
 				if(getInputKey["ArrowUp"]) {
 					jump();
 				}
@@ -121,14 +121,24 @@
 				updatePlayerVerticalVelocity();
 				updateBallMovement();
 
-				drawAll();
-
 				if (collisionDetected())
 				{
 					gameOver();
 					return;
 				}
 			}
+	    }
+
+	    function gameClear()
+	    {
+	        playerContext.clearRect(0, 0, playerW, playerH);
+	        ballContext.clearRect(0, 0, ballW, ballH);
+	    }
+
+	    function gameDraw()
+	    {
+	    	drawPlayer();
+	    	drawBall();
 	    }
 
 	    function gameOver()
@@ -156,69 +166,68 @@
 	    	ballLeft = ballX;
 	    	ballRight = ballX + playerW;
 
-	    	// 
 	    	return playerTop < ballBottom && playerLeft < ballRight && playerBottom > ballTop && playerRight > ballLeft;
 	    }
 
 	    function jump()
 	    {
-	      if (isGrounded)
-	      {
-	        isGrounded = false;
-	        playerVerticalVelocity = playerJumpPower;
-	      }
+			if (isGrounded)
+			{
+				isGrounded = false;
+				playerVerticalVelocity = playerJumpPower;
+			}
 	    }
 
 	    function updatePlayerMovement()
 	    {
-	      var playerMoved = false;
+			var playerMoved = false;
 
-	      if(getInputKey["ArrowLeft"]) {
-	          playerMoved = move("Left");
-	      }
-	      else if(getInputKey["ArrowRight"]) {
-	          playerMoved = move("Right");
-	      }
+			if(getInputKey["ArrowLeft"]) {
+				playerMoved = move("Left");
+			}
+			else if(getInputKey["ArrowRight"]) {
+				playerMoved = move("Right");
+			}
 
-	      if (!isGrounded)
-	        playerAnimation = JUMP;
-	      else if (!playerMoved)
-	        playerAnimation = IDLE;
-	      else if (isWalking)
-	        playerAnimation = (playerAnimation + 1) % WALK_MAX;
-	      else
-	        playerAnimation = WALK_START;
+			if (!isGrounded)
+				playerAnimation = JUMP;
+			else if (!playerMoved)
+				playerAnimation = IDLE;
+			else if (isWalking)
+				playerAnimation = (playerAnimation + 1) % WALK_MAX;
+			else
+				playerAnimation = WALK_START;
 
-	      isWalking = playerMoved;
+			isWalking = playerMoved;
 	    }
 
 	    function updatePlayerVerticalVelocity()
 	    {
-	      if (!isGrounded)
-	      {
-	        playerVerticalVelocity += gravity;
+			if (!isGrounded)
+			{
+				playerVerticalVelocity += gravity * deltaTime;
 
-	        movePlayer(0, playerVerticalVelocity);
+				movePlayer(0, playerVerticalVelocity);
 
-	        if (playerY >= groundY - playerH)
-	        {
-	          setPlayerPosition(playerX, groundY - playerH);
-	          isGrounded = true;
-	        }
-	      }
+				if (playerY >= groundY - playerH)
+				{
+					setPlayerPosition(playerX, groundY - playerH);
+					isGrounded = true;
+				}
+			}
 	    }
 
 	    function updateBallMovement()
 	    {
-	    	ballVerticalVelocity += gravity;
+	    	ballVerticalVelocity += gravity * deltaTime;
 
-	    	moveBall(ballHorizontalVelocity, ballVerticalVelocity);
+	    	moveBall(ballHorizontalVelocity * deltaTime, ballVerticalVelocity);
 
 	    	if (ballY >= groundY - ballH)
 	    	{
 	    		setBallPosition(ballX, groundY - ballH);
-	    		var bouncForce = getRndInteger(45,85);
-	    		ballVerticalVelocity = -bouncForce;
+	    		var bounceForce = getRndInteger(ballMinBounceForce,ballMaxBounceForce);
+	    		ballVerticalVelocity = -bounceForce;
 	    	}
 	    	else if (ballY <= 0)
 	    	{
@@ -247,7 +256,7 @@
 	      {
 	          isFacingRight = true;
 
-	          movePlayer(playerWalkSpeed, 0);
+	          movePlayer(playerWalkSpeed * deltaTime, 0);
 
 	          if (playerX > backgroudWidth - playerW)
 	            setPlayerPosition(backgroudWidth - playerW, playerY);
@@ -256,7 +265,7 @@
 	      {
 	          isFacingRight = false;
 
-	          movePlayer(-playerWalkSpeed, 0);
+	          movePlayer(-playerWalkSpeed  * deltaTime, 0);
 
 	          if (playerX < 0)
 	            setPlayerPosition(0, playerY);
@@ -268,32 +277,26 @@
 	      return prevX != playerX;
 	    }
 
-	    function drawAll()
-	    {
-	    	drawPlayer();
-	    	drawBall();
-	    }
-
 	    function drawPlayer()
 	    {
-	      if (isFacingRight)
-	      {
-	       playerContext.drawImage(playerImg,
-	           // Origen
-	           playerAnimation * playerW, 0, playerW, playerH,
-	           // Destino
-	           0, 0, playerW, playerH);
-	      }
-	      else
-	      {
-	       playerContext.save();
-	       playerContext.scale(-1,1);
-	       playerContext.drawImage(playerImg,
-	           // Origen
-	           playerAnimation * playerW, 0, playerW, playerH,
-	           0,0,playerW * -1, playerH);
-	       playerContext.restore();        
-	      }
+			if (isFacingRight)
+			{
+				playerContext.drawImage(playerImg,
+				   // Origen
+				   playerAnimation * playerW, 0, playerW, playerH,
+				   // Destino
+				   0, 0, playerW, playerH);
+			}
+			else
+			{
+				playerContext.save();
+				playerContext.scale(-1,1);
+				playerContext.drawImage(playerImg,
+					// Origen
+					playerAnimation * playerW, 0, playerW, playerH,
+					0,0,playerW * -1, playerH);
+				playerContext.restore();        
+			}
 	    }
 
 	    function drawBall()
@@ -303,14 +306,14 @@
 
 	    function movePlayer(x, y)
 	    {
-	       playerContext.translate(x,y);
+	        playerContext.translate(x,y);
 	        playerX += x;
 	        playerY += y;
 	    }
 
 	    function setPlayerPosition(x, y)
 	    {
-	       playerContext.translate(x - playerX, y - playerY);
+	        playerContext.translate(x - playerX, y - playerY);
 	        playerX = x;
 	        playerY = y;
 	    }
@@ -331,12 +334,6 @@
 	        ballY = y;
 
 	        //showDebugMessage("Ball x:" + ballX + " - y: " + ballY);
-	    }
-
-	    function clearAll()
-	    {
-	        playerContext.clearRect(0, 0, playerW, playerH);
-	        ballContext.clearRect(0, 0, ballW, ballH);
 	    }
 
 	    function updateGameTime()
@@ -383,8 +380,14 @@
 		}
 	    
 	    // key events
-	    document.addEventListener("keydown", function (e) { getInputKey[e.key] = true; });
-	    document.addEventListener("keyup", function (e) { getInputKey[e.key] = false; });
+	    document.addEventListener("keydown", function (e) {
+	    	if (e.defaultPrevented) return;	    	
+	    	getInputKey[e.key] = true;
+	    });
+	    document.addEventListener("keyup", function (e) {
+	    	if (e.defaultPrevented) return;	    	
+	    	getInputKey[e.key] = false;
+	    });
 	    
 	    playerImg.addEventListener("load", () => { 
 	    	setTimeout(initializeGame, 100);    
@@ -392,8 +395,23 @@
 
 	    function initializeGame()
 	    {
-	      gameStart();
-	      setInterval(gameLoop, 60);	    	
+			gameStart();
+			//setInterval(gameLoop, 60);	
+
+	    	window.requestAnimationFrame(loop);    	
+	    }
+
+	    var lastRender = 0;
+	    function loop(timeStamp)
+	    {
+	    	deltaTime = timeStamp - lastRender;
+
+	    	gameClear();
+	    	gameLoop(deltaTime);
+	    	gameDraw();
+
+	    	lastRender = timeStamp;
+	    	window.requestAnimationFrame(loop);
 	    }
 	</script>
 {% endblock %}
