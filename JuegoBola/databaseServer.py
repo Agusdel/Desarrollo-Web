@@ -81,7 +81,7 @@ def submit_score():
     player = request.form.get('player', type = str)
     score = request.form.get('score', default = 0, type = int)
 
-    print_submited_values(player, score);
+    #print_submited_values(player, score);
 
     session['name'] = player
 
@@ -101,6 +101,6 @@ def ballgame():
     return render_template('ballgame.html', player=session.get('name'), highscore=session.get('highscore'))
                            
 if __name__ == '__main__':
-    db.drop_all()
+   	db.drop_all()
     db.create_all()
     app.run()
