@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Edit your story!{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Edit your story!</h1>
+</div>
+
+<h3>Add Page</h3>
+
+{{ wtf.quick_form(form) }}
+
+<h3>Pages</h3>
+<p> </p>
+
+{% for page in pageList %}
+    <div id="page-{{ loop.index }}"> 
+        <h4>{{ page.name }} </h4>
+        <p>{{ page.text }}</p>
+        {% if page.link1Name %}
+            <p>'{{ page.link1Text }}' linked to page '{{ page.link1Name }}'</p>
+        {% endif %}
+{% endfor %}
+
+{% endblock %}
