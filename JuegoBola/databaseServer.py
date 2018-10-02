@@ -88,10 +88,9 @@ def submit_score():
     user = User.query.filter_by(username=player).first()
     if (score > user.highscore):
         user.highscore = score
-        session['highscore'] = score
         db.session.commit()
-    else:
-        session['highscore'] = user.highscore
+        
+    session['highscore'] = score
 
     return redirect(url_for('index'))
 
