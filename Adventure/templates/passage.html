@@ -1,0 +1,21 @@
+{% extends 'bootstrap/base.html' %}
+
+{% block content %}
+    
+{% for node in passages %}
+    {% if node.id == passage_id %}
+        <p>{{ node.paragraph }}</p>
+        {% for link in node.links %}
+            <p>
+                <a href = {{ url_for('show_passage', passage_id=link.id) }}>{{ link.text }}</a>
+            </p>
+        {% endfor %}
+    {% endif %}
+{% endfor %}
+
+<hr/>
+
+<a href = {{ url_for('rewind') }}>Regresar</a>
+
+{% endblock %}
+

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+     {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul class=flashes>
+        {% for message in messages %}
+            <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+    {% endwith %}
+ 
+    <ul>
+    {% for passage in passages %}
+        <li><strong>ID:</strong> <em>{{ passage.id }}</em> - <strong>TEXT:</strong> <em>{{ passage.paragraph }}</em></li>       
+    {% endfor %}
+    </ul>
+    
+    <hr/>
+    {% if form.errors %}
+        {{ form.errors }}
+    {% endif %}
+    
+    <form action="{{ url_for('edit') }}" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+        {{ form.id.label }}
+        {{ form.id }}
+        </p>
+        <p>
+            {{ form.paragraph.label }}<br>
+            {{ form.paragraph(rows='10', cols='50') }}
+        </p>
+        <p>
+            {{ form.links.label }}<br>
+            {{ form.links }}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+  
+    <a href={{ url_for('index') }}>Return to homepage</a>
+{% endblock %}

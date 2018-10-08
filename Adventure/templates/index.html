@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <ul>
+        <li>
+            <a href = {{ url_for('edit') }}>Edit the story</a>
+        </li>
+    
+        <li>
+            <a href = {{ url_for('show_passage', passage_id=1) }}>Start</a>
+        </li>
+    </ul>
+    
+    {{ super() }}
+    
+{% endblock %}
