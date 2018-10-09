@@ -10,6 +10,8 @@
         </ul>
         {% endif %}
     {% endwith %}
+
+    <h3>Your passages!</h3>
  
     <ul>
     {% for passage in passages %}
@@ -21,6 +23,8 @@
     {% if form.errors %}
         {{ form.errors }}
     {% endif %}
+
+    <h3>Add a new passage!</h3>
     
     <form action="{{ url_for('edit') }}" method="post">
         {{ form.hidden_tag() }}
@@ -33,11 +37,17 @@
             {{ form.paragraph(rows='10', cols='50') }}
         </p>
         <p>
+            {{ form.background.label }} - Options are: background, player, smile, triangles and rainbow<br>
+            {{ form.background }}
+        </p>
+        <p>
             {{ form.links.label }}<br>
             {{ form.links }}
         </p>
         <p>{{ form.submit() }}</p>
     </form>
   
-    <a href={{ url_for('index') }}>Return to homepage</a>
+    <p><button type="button" style='font-size: 16px; font-weight:bold'>
+        <a href={{ url_for('index') }}>Return to homepage</a>
+    </button></p>   
 {% endblock %}

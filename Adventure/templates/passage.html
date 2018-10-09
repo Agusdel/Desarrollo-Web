@@ -1,21 +1,19 @@
-{% extends 'bootstrap/base.html' %}
+{% extends 'base.html' %}
 
 {% block content %}
-    
-{% for node in passages %}
-    {% if node.id == passage_id %}
-        <p>{{ node.paragraph }}</p>
-        {% for link in node.links %}
-            <p>
-                <a href = {{ url_for('show_passage', passage_id=link.id) }}>{{ link.text }}</a>
-            </p>
-        {% endfor %}
-    {% endif %}
-{% endfor %}
+	<body background="{{ url_for('static', filename='img/'+ passage.background + '.png') }}">
+    <p style='font-size: 18px; font-weight:bold'>{{ passage.paragraph }}</p>
+    {% for link in passage.links %}
+        <p style='font-size: 18px; font-weight:bold'>
+            <a href = {{ url_for('show_passage', passage_id=link.id) }}>{{ link.text }}</a>
+        </p>
+    {% endfor %}
 
 <hr/>
 
-<a href = {{ url_for('rewind') }}>Regresar</a>
+<p><button type="button" style='font-size: 18px; font-weight:bold'>
+	<a href = {{ url_for('rewind') }}>{% if is_first_passage %}Back to menu{% else %}Back{% endif %}</a>
+</button></p>
 
 {% endblock %}
 

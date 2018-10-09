@@ -23,8 +23,8 @@
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
                 <li><a href="/">Home</a></li>
-                <li><a href="/play">Play</a></li>
-                <li><a href="/editor">Edit</a></li>
+                <li><a href={{ url_for('show_passage', passage_id=1) }} >Play</a></li>
+                <li><a href={{ url_for('edit') }} >Edit</a></li>
             </ul>
         </div>
     </div>

@@ -1,13 +1,14 @@
 {% extends 'base.html' %}
 
 {% block content %}
+    <h3>What would you like to do today?</h3>
     <ul>
         <li>
-            <a href = {{ url_for('edit') }}>Edit the story</a>
+            <a style="font-size: 18px" href = {{ url_for('edit') }}>Edit the story</a>
         </li>
     
         <li>
-            <a href = {{ url_for('show_passage', passage_id=1) }}>Start</a>
+            <a style="font-size: 18px" href = {{ url_for('play') }}>Play your story!</a>
         </li>
     </ul>
     
