@@ -23,6 +23,7 @@
 
 	    // game vars
 	    var getInputKey = {};
+
 	    function consumeInputKey(key) { getInputKey[key] = false; }
 	    let gravity = 0.1;
 	    let groundY = 512 - 25;
@@ -69,6 +70,11 @@
 				return Math.hypot(this.x, this.y);
 			}
 
+			toString()
+			{
+				return "(" + this.x + ", " + this.y + ")";
+			}
+
 			static get up() {
 			    return new Vector2(0, -1);
   			}
@@ -109,9 +115,9 @@
 
 				gameObjects.push(this);
 
-				if (hasGameStarted)
-					this.start();
-		    }
+				if (hasGameStarted)					
+	    			window.requestAnimationFrame(this.start);
+	    	}
 
 		    draw()
 		    {
@@ -121,6 +127,26 @@
 		    clear()
 		    {
 		    	this.context.clearRect(0, 0, this.sizeX, this.sizeY);
+		    }
+
+		    destroy()
+		    {
+
+		    	// WARNING: Using splice during update can mess up some other object's update, or even crash.
+		    	// Consider justo setting a flag isPendingKill to true insteand, and after tick, removing all game objects.
+		    	// Same should be consider when spawning game objects. Should appear in following frame
+
+		    	this.clear();
+
+		    	for (var i = gameObjects.length - 1; i >= 0; i--) {
+		    		if (gameObjects[i].name === this.name)
+		    		{
+		    			gameObjects.splice(i, 1);
+		    			break;
+		    		}
+		    	}
+
+		    	this.canvas.parentNode.removeChild(this.canvas);
 		    }
 
 		    start() {}
@@ -192,7 +218,7 @@
 		    {
 		    	if (!isGameOver)
 		    	{
-					this.updateMovement(deltaTime);
+					//this.updateMovement(deltaTime);
 				}
 		    }
 
@@ -245,7 +271,10 @@
 		        this.isFacingRight = true;
 
 			    this.walkSpeed = 0.5;
-			    this.jumpPower = -35;
+			    this.jumpPower = -25;
+			    this.reloadTime = 0.8;
+
+			    this.isReloading = false;
 		    }
 
 		    start()
@@ -260,7 +289,7 @@
 					if(getInputKey["ArrowUp"])
 						this.jump();
 
-					if(getInputKey[" "]) // Space bar
+					if(getInputKey[" "] && !this.isReloading) // Space bar
 						this.shoot();
 
 					this.updateHorizontalMovement(deltaTime);
@@ -323,10 +352,18 @@
 		    }
 
 		    shoot()
+		    {		    	
+		    	this.isReloading = true;
+
+		    	var spawnPosition = new Vector2(this.center().x - 8, this.y - 22);
+		    	new Bullet("Bullet", "{{ url_for('static', filename='img/bullet.png') }}", 16, 16, spawnPosition, Vector2.up);
+
+		    	setTimeout(this.stopReloading.bind(this), this.reloadTime * 1000);
+		    }
+
+		    stopReloading()
 		    {
-		    	console.log("Shoot");
-		    	var spawnPosition = new Vector2(this.center().x, this.center().y - this.sizeY - 10);
-		    	new Bullet("Bullet", "{{ url_for('static', filename='img/smile.png') }}", 32, 32, spawnPosition, Vector2.up);
+		    	this.isReloading = false;
 		    }
 
 		    moveInDirection(direction, deltaTime)
@@ -390,10 +427,7 @@
 		        this.speed = 10;
 		        this.position = position;
 		        this.direction = direction.normalized();
-		    }
 
-		    start()
-		    {
 		    	this.setPosition(this.position);
 		    }
 
@@ -402,7 +436,17 @@
 		    	if (!isGameOver)
 		    	{
 		    		this.move(this.direction.x * this.speed, this.direction.y * this.speed);
+
+		    		// destroyed when out of screen
+		    		if (this.y <= - this.sizeY)
+		    			this.destroy();
 				}
+		    }
+
+		    onCollision(other)
+		    {
+		    	if (other.name !== "Player")
+		    		this.destroy();
 		    }
 		}
 
@@ -431,9 +475,8 @@
 	    	backgroundContext.drawImage(background, 0, 0, backgroundWidth, backgroundHeight);
 	    });
 
-	    var playerObj = new Player("Player", "{{ url_for('static', filename='img/player.png') }}", 48, 60);
-
-	    var ballObj = new Ball("Ball", "{{ url_for('static', filename='img/smile.png') }}", 64, 64);
+	    new Player("Player", "{{ url_for('static', filename='img/player.png') }}", 48, 60);
+	    new Ball("Ball", "{{ url_for('static', filename='img/smile.png') }}", 64, 64);
 
 
 	    function gameStart()
@@ -479,7 +522,7 @@
 
 	    function areColliding(object1, object2)
 	    {
-	    	return object1.distanceTo(object2) <= object1.sizeX / 2 + object2.sizeX / 2;
+	    	return object1.distanceTo(object2) <= (object1.sizeX + object2.sizeX) / 2;
 
 	    	// for rectangular collision
 	    	/*playerTop = playerY;
@@ -564,17 +607,13 @@
 	    
 	    // key events
 	    document.addEventListener("keydown", function (e) {
-	    	if (e.defaultPrevented) return;  	
+	    	if (e.defaultPrevented) return; 	
 	    	getInputKey[e.key] = true;
 	    });
 	    document.addEventListener("keyup", function (e) {
 	    	if (e.defaultPrevented) return;	    	
 	    	getInputKey[e.key] = false;
 	    });
-	    
-	    /*playerImg.addEventListener("load", () => { 
-	    	setTimeout(initializeGame, 100);    
-	    });*/
 
 	    function getGameObjectByName(name)
 	    {
@@ -594,7 +633,7 @@
 
 			hasGameStarted = true;
 
-			//setInterval(gameLoop, 60);	
+			//setInterval(loop, 60);	
 
 	    	window.requestAnimationFrame(loop);    	
 	    }
