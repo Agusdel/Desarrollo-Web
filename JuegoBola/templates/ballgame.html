@@ -14,9 +14,11 @@
 {% endblock %}
 
 {% block page_content %}
+	<!-- style.left set also from js-->
 	<div id="player-name" style="position: absolute; top: 80px; left: 250px; z-index: 10; font-size: 200%">Player: {{ player }}</div>
-	<div id="highest-score" style="position: absolute; top: 110px; left: 250px; z-index: 10; font-size: 200%">Highest score: {{ highscore }}</div>
-	<div id="game-time" style="position: absolute; top: 140px; left: 250px; z-index: 10; font-size: 200%">Survived time: 0</div>
+	<div id="game-time" style="position: absolute; top: 110px; left: 250px; z-index: 10; font-size: 200%">Survived time: 0</div>
+	<div id="highest-score" style="position: absolute; top: 140px; left: 250px; z-index: 10; font-size: 200%">Highest score: {{ highscore }}</div>
+	<div id="score" style="position: absolute; top: 170px; left: 250px; z-index: 10; font-size: 200%">Score: 0</div>
 	<p id="debug" style="position: absolute; left: 0; top: 540; z-index: 10;"></p>
 	
 	<script type="text/javascript">
@@ -25,24 +27,34 @@
 	    var getInputKey = {};
 
 	    function consumeInputKey(key) { getInputKey[key] = false; }
-	    let gravity = 0.1;
+	    let gravity = 100;
 	    let groundY = 512 - 25;
 
 	    var hasGameStarted = false;
 	    var isGameOver = false;
+	    var score = 0;
 	    var gameTime = 0;
 	    var gameTimerInveterval;
-	    var deltaTime = 0;
+	    var deltaSeconds = 0;
+
+	    var nextAvailableGameObjectIndex = 0;
+	    function getAvailableGOIndex() {return nextAvailableGameObjectIndex++; }
+
+	    var gameObjects = [];
+
+	    //let gameCanvas = document.getElementById("game-canvas");
 
 	    // background vars
 	    let backgroundWidth = 1024;
 	    let backgroundHeight = 512;
 
-	    var gameObjects = [];
-
 		// global vars
 
 		let screenLeft = Math.max((document.body.clientWidth - backgroundWidth) / 2, 0);
+
+		let SPRITE_BULLET = "{{ url_for('static', filename='img/bullet.png') }}";
+		let SPRITE_BALL = "{{ url_for('static', filename='img/smile.png') }}";
+		let SPRITE_PLAYER = "{{ url_for('static', filename='img/player.png') }}";
 
 		// classes
 
@@ -95,9 +107,10 @@
 		        this.sizeY = sizeY;
 
 				this.detectsCollision = true;
+				this.isPendingKill = false;
 
 			    this.canvas = document.createElement('canvas');
-		        this.canvas.id = name;
+		        this.canvas.id = name + "_" + getAvailableGOIndex();
 		        this.canvas.style.position = "absolute";
 		        this.canvas.style.zIndex = 5;
 		        this.canvas.style.left = screenLeft +"px";
@@ -105,6 +118,7 @@
 			    this.canvas.height = backgroundHeight;
 
 			    $(document.body).append(this.canvas);
+			    //gameCanvas.appendChild(this.canvas);
 
 			    // Obtener contexto del canvas para el objeto
 			    this.context = this.canvas.getContext("2d");
@@ -115,8 +129,9 @@
 
 				gameObjects.push(this);
 
-				if (hasGameStarted)					
-	    			window.requestAnimationFrame(this.start);
+				// START SHOULD BE CALLED ON THE NEXT FRAME IF GAME HAS ALREADY STARTED!
+				//if (hasGameStarted)					
+	    		//	window.requestAnimationFrame(this.start);
 	    	}
 
 		    draw()
@@ -131,10 +146,12 @@
 
 		    destroy()
 		    {
-
+		    	if (this.isPendingKill) return;
 		    	// WARNING: Using splice during update can mess up some other object's update, or even crash.
 		    	// Consider justo setting a flag isPendingKill to true insteand, and after tick, removing all game objects.
 		    	// Same should be consider when spawning game objects. Should appear in following frame
+
+		    	this.isPendingKill = true;
 
 		    	this.clear();
 
@@ -146,12 +163,14 @@
 		    		}
 		    	}
 
+		    	console.log("Parent: " + this.canvas.parentNode.outerHTML);
+
 		    	this.canvas.parentNode.removeChild(this.canvas);
 		    }
 
 		    start() {}
 
-		    update(deltaTime) {}
+		    update(deltaSeconds) {}
 
 		    onCollision(other) {}
 
@@ -195,38 +214,81 @@
 
 		class Ball extends GameObject {
 
-		    constructor(name, spriteURL, sizeX, sizeY) {
+		    constructor(name, spriteURL, sizeX, sizeY, position, velocity, bounceForcelimits) {
 		        // Chain constructor with super
 		        super(name, spriteURL, sizeX, sizeY);
 
 		        this.verticalVelocity = 0;
 		        this.horizontalVelocity = 0;
 
-			    this.minHorizontalVelocity = 0.3;
-			    this.maxHorizontalVelocity = 0.7;
-			    this.minBounceForce = 20;
-			    this.maxBounceForce = 40;
+			    this.minHorizontalVelocity = 100;
+			    this.maxHorizontalVelocity = 200;
+
+		        if (bounceForcelimits instanceof Object)
+		        {
+				    this.minBounceForce = bounceForcelimits["min"];
+				    this.maxBounceForce = bounceForcelimits["max"];
+		        }
+		        else
+		        {
+				    this.minBounceForce = 30;
+				    this.maxBounceForce = 60;
+				}
+
+			    if (position instanceof Vector2)
+			    	this.setPosition(position);
+
+			    if (velocity instanceof Vector2)
+			    {
+			    	this.horizontalVelocity = velocity.x;
+			    	this.verticalVelocity = velocity.y;
+			    }
 		    }
 
 		    start()
 		    {
 				this.horizontalVelocity = getRndInteger(this.minHorizontalVelocity, this.maxHorizontalVelocity) * ((getRndInteger(0,1) == 1) ? 1 : -1);
-				super.setPosition(backgroundWidth * 0.25, Math.floor(backgroundHeight/10));
+				this.setPosition(backgroundWidth * 0.25, Math.floor(backgroundHeight/10));
 		    }
 
-		    update(deltaTime)
+		    update(deltaSeconds)
 		    {
-		    	if (!isGameOver)
+				this.updateMovement(deltaSeconds);
+		    }
+
+		    onCollision(other)
+		    {
+		    	if (other.name === "Bullet")
 		    	{
-					//this.updateMovement(deltaTime);
-				}
-		    }
+					increaseScore();
 
-		    updateMovement(deltaTime)
+					this.verticalVelocity = Math.abs(this.verticalVelocity);
+
+					var bounceForcelimits = {
+						min: this.minBounceForce * 1.5,
+						max: this.maxBounceForce * 1.5
+					}
+
+					// Up left 
+					var spawnPosition = new Vector2(this.x, this.y - this.sizeY);
+					var spawnVelocity = new Vector2(- Math.abs(this.horizontalVelocity), - this.verticalVelocity);
+	    			new Ball("Ball", SPRITE_BALL, this.sizeX/2, this.sizeY/2, spawnPosition, spawnVelocity, bounceForcelimits);
+
+	    			// Up right
+					spawnPosition = new Vector2(this.x + this.sizeY, this.y - this.sizeY);
+					spawnVelocity = new Vector2(Math.abs(this.horizontalVelocity), - this.verticalVelocity);
+	    			new Ball("Ball", SPRITE_BALL, this.sizeX/2, this.sizeY/2, spawnPosition, spawnVelocity, bounceForcelimits);
+
+	    			//this.destroy();
+		    	}
+			}
+
+
+		    updateMovement(deltaSeconds)
 		    {
-		    	this.verticalVelocity += gravity * deltaTime;
+		    	this.verticalVelocity += gravity * deltaSeconds;
 
-		    	this.move(this.horizontalVelocity * deltaTime, this.verticalVelocity);
+		    	this.move(this.horizontalVelocity * deltaSeconds, this.verticalVelocity);
 
 		    	if (this.y >= groundY - this.sizeY)
 		    	{
@@ -270,9 +332,9 @@
 		        this.verticalVelocity = 0;
 		        this.isFacingRight = true;
 
-			    this.walkSpeed = 0.5;
-			    this.jumpPower = -25;
-			    this.reloadTime = 0.8;
+			    this.walkSpeed = 350;
+			    this.jumpPower = -45;
+			    this.reloadTime = 0.75;
 
 			    this.isReloading = false;
 		    }
@@ -282,19 +344,16 @@
 		    	this.setPosition(backgroundWidth / 2, groundY - this.sizeY);
 		    }
 
-		    update(deltaTime)
+		    update(deltaSeconds)
 		    {
-		    	if (!isGameOver)
-		    	{
-					if(getInputKey["ArrowUp"])
-						this.jump();
+				if(getInputKey["ArrowUp"])
+					this.jump();
 
-					if(getInputKey[" "] && !this.isReloading) // Space bar
-						this.shoot();
+				if(getInputKey[" "] && !this.isReloading) // Space bar
+					this.shoot();
 
-					this.updateHorizontalMovement(deltaTime);
-					this.updateVerticalVelocity(deltaTime);
-				}
+				this.updateHorizontalMovement(deltaSeconds);
+				this.updateVerticalVelocity(deltaSeconds);
 		    }
 
 		    onCollision(other)
@@ -303,11 +362,11 @@
 					gameOver();
 			}
 
-		    updateVerticalVelocity(deltaTime)
+		    updateVerticalVelocity(deltaSeconds)
 		    {
 				if (!this.isGrounded)
 				{
-					this.verticalVelocity += gravity * deltaTime;
+					this.verticalVelocity += gravity * deltaSeconds;
 
 					this.move(0, this.verticalVelocity);
 
@@ -319,15 +378,15 @@
 				}
 		    }
 
-		    updateHorizontalMovement(deltaTime)
+		    updateHorizontalMovement(deltaSeconds)
 		    {
 				var playerMoved = false;
 
 				if(getInputKey["ArrowLeft"]) {
-					playerMoved = this.moveInDirection("Left", deltaTime);
+					playerMoved = this.moveInDirection("Left", deltaSeconds);
 				}
 				else if(getInputKey["ArrowRight"]) {
-					playerMoved = this.moveInDirection("Right", deltaTime);
+					playerMoved = this.moveInDirection("Right", deltaSeconds);
 				}
 
 				if (!this.isGrounded)
@@ -356,7 +415,7 @@
 		    	this.isReloading = true;
 
 		    	var spawnPosition = new Vector2(this.center().x - 8, this.y - 22);
-		    	new Bullet("Bullet", "{{ url_for('static', filename='img/bullet.png') }}", 16, 16, spawnPosition, Vector2.up);
+		    	new Bullet("Bullet", SPRITE_BULLET, 16, 16, spawnPosition, Vector2.up);
 
 		    	setTimeout(this.stopReloading.bind(this), this.reloadTime * 1000);
 		    }
@@ -366,7 +425,7 @@
 		    	this.isReloading = false;
 		    }
 
-		    moveInDirection(direction, deltaTime)
+		    moveInDirection(direction, deltaSeconds)
 		    {
 		      var prevX = this.x;
 
@@ -374,7 +433,7 @@
 		      {
 		          this.isFacingRight = true;
 
-		          this.move(this.walkSpeed * deltaTime, 0);
+		          this.move(this.walkSpeed * deltaSeconds, 0);
 
 		          if (this.x > backgroundWidth - this.sizeX)
 		            this.setPosition(backgroundWidth - this.sizeX, this.y);
@@ -383,7 +442,7 @@
 		      {
 		          this.isFacingRight = false;
 
-		          this.move(- this.walkSpeed  * deltaTime, 0);
+		          this.move(- this.walkSpeed  * deltaSeconds, 0);
 
 		          if (this.x < 0)
 		            this.setPosition(0, this.y);
@@ -424,23 +483,20 @@
 		        // Chain constructor with super
 		        super(name, spriteURL, sizeX, sizeY);
 
-		        this.speed = 10;
+		        this.speed = 700;
 		        this.position = position;
 		        this.direction = direction.normalized();
 
 		    	this.setPosition(this.position);
 		    }
 
-		    update(deltaTime)
+		    update(deltaSeconds)
 		    {
-		    	if (!isGameOver)
-		    	{
-		    		this.move(this.direction.x * this.speed, this.direction.y * this.speed);
+	    		this.move(this.direction.x * this.speed * deltaSeconds, this.direction.y * this.speed * deltaSeconds);
 
-		    		// destroyed when out of screen
-		    		if (this.y <= - this.sizeY)
-		    			this.destroy();
-				}
+	    		// destroyed when out of screen
+	    		if (this.y <= - this.sizeY)
+	    			this.destroy();
 		    }
 
 		    onCollision(other)
@@ -451,8 +507,9 @@
 		}
 
 		document.getElementById("player-name").style.left = screenLeft + 15 + "px";
-		document.getElementById("highest-score").style.left = screenLeft + 15 + "px";
 		document.getElementById("game-time").style.left = screenLeft + 15 + "px";
+		document.getElementById("highest-score").style.left = screenLeft + 15 + "px";
+		document.getElementById("score").style.left = screenLeft + 15 + "px";
 
 	    var backgroundCanvas = document.createElement('canvas');
         backgroundCanvas.id = "scenery";
@@ -475,8 +532,8 @@
 	    	backgroundContext.drawImage(background, 0, 0, backgroundWidth, backgroundHeight);
 	    });
 
-	    new Player("Player", "{{ url_for('static', filename='img/player.png') }}", 48, 60);
-	    new Ball("Ball", "{{ url_for('static', filename='img/smile.png') }}", 64, 64);
+	    new Player("Player", SPRITE_PLAYER, 48, 60);
+	    new Ball("Ball", SPRITE_BALL, 64, 64);
 
 
 	    function gameStart()
@@ -486,9 +543,9 @@
 			gameObjects.forEach((object) => { object.start()})
 	    }
 
-	    function gameLoop(deltaTime)
+	    function gameLoop(deltaSeconds)
 	    {
-			gameObjects.forEach((object) => { object.update(deltaTime)})
+			gameObjects.forEach((object) => { object.update(deltaSeconds)})
 	    }
 
 	    function gameClear()
@@ -505,11 +562,11 @@
 	    {
 	    	for (var i = 0; i < gameObjects.length; i++)
 	    	{
-	    		if (!gameObjects[i].detectsCollision) continue;
+	    		if (!gameObjects[i].detectsCollision || gameObjects[i].isPendingKill) continue;
 
 	    		for (var j = i + 1; j < gameObjects.length; j++)
 	    		{
-	    			if (!gameObjects[j].detectsCollision) continue;
+	    			if (!gameObjects[j].detectsCollision || gameObjects[j].isPendingKill) continue;
 
 	    			if (areColliding(gameObjects[i], gameObjects[j]))
 	    			{
@@ -545,9 +602,15 @@
 	    	setTimeout(submitScore, 1500);
 	    }
 
+	    function increaseScore()
+	    {
+	    	score++;
+	    	document.getElementById("score").innerHTML = "Score: " + score;
+	    }
+
 	    function submitScore()
 	    {
-			var params = {player: '{{ player }}', score: gameTime};
+			var params = {player: '{{ player }}', score: score};
 			post("/submit", params);
 	    }
 
@@ -635,20 +698,25 @@
 
 			//setInterval(loop, 60);	
 
-	    	window.requestAnimationFrame(loop);    	
+	    	window.requestAnimationFrame(loop);
 	    }
 
 	    var lastRender = 0;
 	    function loop(timeStamp)
 	    {
-	    	deltaTime = timeStamp - lastRender;
+	    	var millisecondsSinceLastFrame = timeStamp - lastRender;
 
-	    	gameClear();
-	    	gameLoop(deltaTime);
-	    	gameDraw();
-	    	gameCollisions();
-
-	    	lastRender = timeStamp;	
+	    	if (millisecondsSinceLastFrame > 20)
+	    	{
+	    		deltaSeconds = millisecondsSinceLastFrame / 1000;
+	    	
+		    	gameClear();
+		    	gameLoop(deltaSeconds);
+		    	gameDraw();
+		    	gameCollisions();
+	
+		    	lastRender = timeStamp;
+	    	}
 
 	    	if (!isGameOver)
 	    		window.requestAnimationFrame(loop);
